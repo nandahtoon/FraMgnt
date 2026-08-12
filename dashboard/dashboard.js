@@ -134,6 +134,162 @@ const Dashboard = (() => {
     };
   }
 
+  // ──────────────── FINANCIAL MATRIX METRICS ────────────────
+
+  let _activeHorizon = 'monthly';
+
+  function setHorizon(horizon) {
+    _activeHorizon = horizon;
+    renderKPIs('360-financial');
+    const tableContainer = document.getElementById('dash-360-table-container');
+    if (tableContainer) {
+      const matrix = _computeFinancialMatrixMetrics();
+      tableContainer.innerHTML = _build360TableHTML(matrix);
+    }
+  }
+
+  function _mapExpenseCategory(r) {
+    const cat = String(r.category || r.item_name || '').toLowerCase();
+    if (cat.includes('produce') || cat.includes('fruit') || cat.includes('veg') || cat.includes('onion') || cat.includes('berry') || cat.includes('melon') || cat.includes('fresh')) {
+      return 'W_Produce';
+    }
+    if (cat.includes('container') || cat.includes('pack') || cat.includes('box') || cat.includes('tray') || cat.includes('cup') || cat.includes('plastic') || cat.includes('lid') || cat.includes('bag')) {
+      return 'W_Container';
+    }
+    if (cat.includes('gfi') || cat.includes('ingredient') || cat.includes('grocery') || cat.includes('spice') || cat.includes('sauce') || cat.includes('oil') || cat.includes('dressing')) {
+      return 'W_GFI';
+    }
+    if (cat.includes('wage') || cat.includes('labour') || cat.includes('labor') || cat.includes('payroll') || cat.includes('staff') || cat.includes('salary')) {
+      return 'Wages/LabourCost';
+    }
+    return 'W_OtherCost';
+  }
+
+  function _emptyBucket(key) {
+    return {
+      periodKey: key,
+      W_Sale: 0,
+      W_Deposit: 0,
+      W_Produce: 0,
+      W_Container: 0,
+      W_GFI: 0,
+      W_Profits: 0,
+      wagesLabourCost: 0,
+      W_OtherCost: 0,
+      NET_Profits: 0
+    };
+  }
+
+  function _computeFinancialMatrixMetrics() {
+    const salesItems = Store.getAll('sales');
+    const purchaseItems = Store.getAll('purchase');
+    const statementItems = Store.getAll('statement');
+
+    const timeMaps = {
+      daily: {},
+      weekly: {},
+      monthly: {},
+      yearly: {}
+    };
+
+    function _initBucket(map, key) {
+      if (!map[key]) {
+        map[key] = _emptyBucket(key);
+      }
+      return map[key];
+    }
+
+    // 1. Sales Data
+    salesItems.forEach(r => {
+      const dObj = _parseDateString(r.date || r._createdAt);
+      const val = parseFloat(r.total_sales || r.total) || 0;
+
+      const dailyKey = dObj.toISOString().split('T')[0];
+      const weekNum = _getWeekNumber(dObj);
+      const weeklyKey = `${dObj.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+      const monthlyKey = dailyKey.slice(0, 7);
+      const yearlyKey = String(dObj.getFullYear());
+
+      _initBucket(timeMaps.daily, dailyKey).W_Sale += val;
+      _initBucket(timeMaps.weekly, weeklyKey).W_Sale += val;
+      _initBucket(timeMaps.monthly, monthlyKey).W_Sale += val;
+      _initBucket(timeMaps.yearly, yearlyKey).W_Sale += val;
+    });
+
+    // 2. Purchases / Expenses
+    purchaseItems.forEach(r => {
+      const dObj = _parseDateString(r.date || r._createdAt);
+      const val = parseFloat(r.total_price || r.total) || 0;
+      const expType = _mapExpenseCategory(r);
+
+      const dailyKey = dObj.toISOString().split('T')[0];
+      const weekNum = _getWeekNumber(dObj);
+      const weeklyKey = `${dObj.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+      const monthlyKey = dailyKey.slice(0, 7);
+      const yearlyKey = String(dObj.getFullYear());
+
+      [timeMaps.daily[dailyKey], timeMaps.weekly[weeklyKey], timeMaps.monthly[monthlyKey], timeMaps.yearly[yearlyKey]].forEach(b => {
+        if (!b) return;
+        if (expType === 'W_Produce') b.W_Produce += val;
+        else if (expType === 'W_Container') b.W_Container += val;
+        else if (expType === 'W_GFI') b.W_GFI += val;
+        else if (expType === 'Wages/LabourCost') b.wagesLabourCost += val;
+        else b.W_OtherCost += val;
+      });
+    });
+
+    // 3. Statements Data
+    statementItems.forEach(r => {
+      const dObj = _parseDateString(r.date_issued || r.date || r._createdAt);
+      const gross = parseFloat(r.gross_sales) || 0;
+      const deposit = parseFloat(r.net_pay) || 0;
+      const deductions = Math.abs(parseFloat(r.deductions) || 0) + Math.abs(parseFloat(r.insurance) || 0);
+
+      const dailyKey = dObj.toISOString().split('T')[0];
+      const weekNum = _getWeekNumber(dObj);
+      const weeklyKey = `${dObj.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+      const monthlyKey = dailyKey.slice(0, 7);
+      const yearlyKey = String(dObj.getFullYear());
+
+      [
+        _initBucket(timeMaps.daily, dailyKey),
+        _initBucket(timeMaps.weekly, weeklyKey),
+        _initBucket(timeMaps.monthly, monthlyKey),
+        _initBucket(timeMaps.yearly, yearlyKey)
+      ].forEach(b => {
+        b.W_Deposit += deposit;
+        b.W_OtherCost += deductions;
+        if (!b.W_Sale && gross) b.W_Sale += gross;
+      });
+    });
+
+    // Compute W_Profits and NET_Profits across all horizons
+    ['daily', 'weekly', 'monthly', 'yearly'].forEach(h => {
+      Object.values(timeMaps[h]).forEach(b => {
+        b.W_Profits = b.W_Sale - (b.W_Produce + b.W_Container + b.W_GFI);
+        b.NET_Profits = b.W_Profits - (b.wagesLabourCost + b.W_OtherCost);
+      });
+    });
+
+    const dailyList = Object.keys(timeMaps.daily).sort().map(k => timeMaps.daily[k]);
+    const weeklyList = Object.keys(timeMaps.weekly).sort().map(k => timeMaps.weekly[k]);
+    const monthlyList = Object.keys(timeMaps.monthly).sort().map(k => timeMaps.monthly[k]);
+    const yearlyList = Object.keys(timeMaps.yearly).sort().map(k => timeMaps.yearly[k]);
+
+    return {
+      daily: dailyList,
+      weekly: weeklyList,
+      monthly: monthlyList,
+      yearly: yearlyList,
+      latest: {
+        daily: dailyList.length ? dailyList[dailyList.length - 1] : _emptyBucket('Today'),
+        weekly: weeklyList.length ? weeklyList[weeklyList.length - 1] : _emptyBucket('This Week'),
+        monthly: monthlyList.length ? monthlyList[monthlyList.length - 1] : _emptyBucket('This Month'),
+        yearly: yearlyList.length ? yearlyList[yearlyList.length - 1] : _emptyBucket('This Year')
+      }
+    };
+  }
+
   function _compute360Metrics() {
     const salesItems = Store.getAll('sales');
     const purchaseItems = Store.getAll('purchase');
@@ -141,6 +297,7 @@ const Dashboard = (() => {
 
     // Time-based Sales Breakdown (Daily, Weekly, Monthly)
     const salesBreakdown = _computeSalesTimeBreakdown(salesItems);
+    const financialMatrix = _computeFinancialMatrixMetrics();
 
     // 1. Total Sales Revenue
     const totalSalesFromSales = salesItems.reduce((acc, r) => acc + (parseFloat(r.total_sales || r.total) || 0), 0);
@@ -230,6 +387,7 @@ const Dashboard = (() => {
 
     return {
       salesBreakdown,
+      financialMatrix,
       totalRevenue,
       totalExpenses,
       netProfit,
@@ -251,20 +409,37 @@ const Dashboard = (() => {
     if (!el) return;
 
     if (selectedModuleId === '360-financial') {
-      const m = _compute360Metrics();
-      const sb = m.salesBreakdown;
+      const matrix = _computeFinancialMatrixMetrics();
+      const b = matrix.latest[_activeHorizon] || matrix.latest.monthly;
+      const periodLabel = b.periodKey || _activeHorizon;
+
       const kpis = [
-        { label: 'Daily Sales Revenue', value: _formatValue(sb.latestDaily.sales, 'currency'), sub: `Latest Day (${sb.latestDaily.date})`, icon: '📅', color: '#00D4AA' },
-        { label: 'Weekly Sales Revenue', value: _formatValue(sb.latestWeekly.sales, 'currency'), sub: `Latest Week (${sb.latestWeekly.week})`, icon: '🗓️', color: '#6C63FF' },
-        { label: 'Monthly Sales Revenue', value: _formatValue(sb.latestMonthly.sales, 'currency'), sub: `Latest Month (${sb.latestMonthly.month})`, icon: '📆', color: '#FF9F43' },
-        { label: 'Gross Sales Revenue', value: _formatValue(m.totalRevenue, 'currency'), sub: 'Sales & Statement Gross', icon: '📈', color: '#48DBFB' },
-        { label: 'Total Purchase Expenses', value: _formatValue(m.totalExpenses, 'currency'), sub: 'Procurement Costs', icon: '💸', color: '#FF6B6B' },
-        { label: 'Net Operating Income', value: _formatValue(m.netProfit, 'currency'), sub: 'Revenue minus Expenses', icon: '💰', color: '#00D4AA' },
-        { label: 'Net Profit Margin', value: _formatValue(m.profitMargin, 'percent'), sub: 'Profit / Sales Ratio', icon: '📊', color: '#FF9FF3' },
-        { label: 'Statement Net Payout', value: _formatValue(m.statementNetPay, 'currency'), sub: 'Franchise Statements', icon: '📄', color: '#54A0FF' }
+        { label: 'W_Sale', value: _formatValue(b.W_Sale, 'currency'), sub: `Gross Sales (${periodLabel})`, icon: '📈', color: '#00D4AA' },
+        { label: 'W_Deposit', value: _formatValue(b.W_Deposit, 'currency'), sub: `Bank Payout (${periodLabel})`, icon: '🏦', color: '#6C63FF' },
+        { label: 'W_Produce', value: _formatValue(b.W_Produce, 'currency'), sub: `Produce Expenses (${periodLabel})`, icon: '🍎', color: '#FFD93D' },
+        { label: 'W_Container', value: _formatValue(b.W_Container, 'currency'), sub: `Containers & Bags (${periodLabel})`, icon: '📦', color: '#FF9F43' },
+        { label: 'W_GFI', value: _formatValue(b.W_GFI, 'currency'), sub: `GFI Supplies (${periodLabel})`, icon: '🥫', color: '#48DBFB' },
+        { label: 'W_Profits', value: _formatValue(b.W_Profits, 'currency'), sub: `Gross Operating Profit (${periodLabel})`, icon: '💰', color: '#00D4AA' },
+        { label: 'Wages / LabourCost', value: _formatValue(b.wagesLabourCost, 'currency'), sub: `Payroll & Staff (${periodLabel})`, icon: '👷', color: '#FF6B6B' },
+        { label: 'W_OtherCost', value: _formatValue(b.W_OtherCost, 'currency'), sub: `Overhead & Insurance (${periodLabel})`, icon: '📋', color: '#54A0FF' },
+        { label: 'NET_Profits', value: _formatValue(b.NET_Profits, 'currency'), sub: `Net Operating Profit (${periodLabel})`, icon: '💵', color: '#FF9FF3' }
       ];
 
-      el.innerHTML = kpis.map(kpi => `
+      const horizonControls = `
+        <div style="grid-column: 1 / -1; display:flex; align-items:center; justify-content:space-between; margin-bottom: 0.5rem; background: var(--bg-card); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border)">
+          <div style="font-size:0.88rem; font-weight:700; color:var(--text)">
+            📊 Financial Indicators Horizon: <span style="color:var(--primary); text-transform:capitalize">${_activeHorizon} View</span>
+          </div>
+          <div class="dashboard-controls">
+            <button class="btn btn-sm ${_activeHorizon==='daily'?'btn-primary':'btn-ghost'}" onclick="Dashboard.setHorizon('daily')">📅 Daily</button>
+            <button class="btn btn-sm ${_activeHorizon==='weekly'?'btn-primary':'btn-ghost'}" onclick="Dashboard.setHorizon('weekly')">🗓️ Weekly</button>
+            <button class="btn btn-sm ${_activeHorizon==='monthly'?'btn-primary':'btn-ghost'}" onclick="Dashboard.setHorizon('monthly')">📆 Monthly</button>
+            <button class="btn btn-sm ${_activeHorizon==='yearly'?'btn-primary':'btn-ghost'}" onclick="Dashboard.setHorizon('yearly')">📅 Yearly</button>
+          </div>
+        </div>
+      `;
+
+      el.innerHTML = horizonControls + kpis.map(kpi => `
         <div class="kpi-card" style="--kpi-accent: ${kpi.color}">
           <div class="kpi-card-top">
             <div>
@@ -429,7 +604,7 @@ const Dashboard = (() => {
 
       // Render 360 Financial Performance Matrix Table
       if (tableContainer) {
-        tableContainer.innerHTML = _build360TableHTML(m.monthlyTrends);
+        tableContainer.innerHTML = _build360TableHTML(m.financialMatrix);
       }
       return;
     }
@@ -781,47 +956,65 @@ const Dashboard = (() => {
     });
   }
 
-  function _build360TableHTML(monthlyTrends) {
+  function _build360TableHTML(matrix) {
+    const horizonData = (matrix && matrix[_activeHorizon]) ? matrix[_activeHorizon] : [];
+    const horizonTitle = _activeHorizon.charAt(0).toUpperCase() + _activeHorizon.slice(1);
+
     return `
       <div class="card admin-card p-4">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem">
           <div>
-            <h3 style="margin:0;font-size:1.1rem">📄 360° Financial Performance & Profitability Matrix</h3>
-            <p style="margin:0.2rem 0 0;font-size:0.78rem;color:var(--text-2)">Month-by-month reconciliation of sales revenue, operating expenses, and net profit margins</p>
+            <h3 style="margin:0;font-size:1.1rem">📄 Multi-Period Financial Performance & Profitability Matrix</h3>
+            <p style="margin:0.2rem 0 0;font-size:0.78rem;color:var(--text-2)">Detailed reconciliation of W_Sale, W_Deposit, W_Produce, W_Container, W_GFI, W_Profits, Wages/Labour, W_OtherCost, and NET_Profits</p>
           </div>
-          <span class="badge badge-success">🟢 Live Calculation</span>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <button class="btn btn-sm ${_activeHorizon==='daily'?'btn-primary':'btn-ghost'}" onclick="Dashboard.setHorizon('daily')">📅 Daily</button>
+            <button class="btn btn-sm ${_activeHorizon==='weekly'?'btn-primary':'btn-ghost'}" onclick="Dashboard.setHorizon('weekly')">🗓️ Weekly</button>
+            <button class="btn btn-sm ${_activeHorizon==='monthly'?'btn-primary':'btn-ghost'}" onclick="Dashboard.setHorizon('monthly')">📆 Monthly</button>
+            <button class="btn btn-sm ${_activeHorizon==='yearly'?'btn-primary':'btn-ghost'}" onclick="Dashboard.setHorizon('yearly')">📅 Yearly</button>
+          </div>
         </div>
         <div class="table-wrapper">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Period / Month</th>
-                <th>Gross Sales Revenue ($)</th>
-                <th>Procurement Expenses ($)</th>
-                <th>Net Operating Income ($)</th>
-                <th>Profit Margin (%)</th>
-                <th>Financial Health Status</th>
+                <th>Period (${horizonTitle})</th>
+                <th>W_Sale ($)</th>
+                <th>W_Deposit ($)</th>
+                <th>W_Produce ($)</th>
+                <th>W_Container ($)</th>
+                <th>W_GFI ($)</th>
+                <th>W_Profits ($)</th>
+                <th>Wages/Labour ($)</th>
+                <th>W_OtherCost ($)</th>
+                <th>NET_Profits ($)</th>
+                <th>Health Status</th>
               </tr>
             </thead>
             <tbody>
-              ${monthlyTrends.length ? monthlyTrends.map(t => {
-                const statusBadge = t.margin >= 30
-                  ? '<span class="badge badge-success">🟢 High Margin (>30%)</span>'
-                  : t.margin > 0
-                    ? '<span class="badge badge-warning">🟡 Profitable (>0%)</span>'
-                    : '<span class="badge badge-danger">🔴 Deficit (<=0%)</span>';
+              ${horizonData.length ? horizonData.map(t => {
+                const statusBadge = t.NET_Profits > 0
+                  ? '<span class="badge badge-success">🟢 Profitable</span>'
+                  : t.NET_Profits === 0
+                    ? '<span class="badge badge-muted">⚪ Break-Even</span>'
+                    : '<span class="badge badge-danger">🔴 Deficit</span>';
                 return `
                   <tr>
-                    <td><strong>${t.month}</strong></td>
-                    <td style="color:var(--accent);font-weight:600">${_formatValue(t.revenue, 'currency')}</td>
-                    <td style="color:var(--danger);font-weight:600">${_formatValue(t.expense, 'currency')}</td>
-                    <td style="color:var(--primary);font-weight:700">${_formatValue(t.profit, 'currency')}</td>
-                    <td><strong style="color:${t.margin>0?'var(--accent)':'var(--danger)'}">${_formatValue(t.margin, 'percent')}</strong></td>
+                    <td><strong>${t.periodKey}</strong></td>
+                    <td style="color:var(--accent);font-weight:600">${_formatValue(t.W_Sale, 'currency')}</td>
+                    <td style="color:#6C63FF;font-weight:600">${_formatValue(t.W_Deposit, 'currency')}</td>
+                    <td style="color:var(--danger);font-weight:500">${_formatValue(t.W_Produce, 'currency')}</td>
+                    <td style="color:#FF9F43;font-weight:500">${_formatValue(t.W_Container, 'currency')}</td>
+                    <td style="color:#48DBFB;font-weight:500">${_formatValue(t.W_GFI, 'currency')}</td>
+                    <td style="color:var(--accent);font-weight:700">${_formatValue(t.W_Profits, 'currency')}</td>
+                    <td style="color:#FF6B6B;font-weight:500">${_formatValue(t.wagesLabourCost, 'currency')}</td>
+                    <td style="color:#54A0FF;font-weight:500">${_formatValue(t.W_OtherCost, 'currency')}</td>
+                    <td style="color:${t.NET_Profits>=0?'#00D4AA':'#FF6B6B'};font-weight:800;font-size:0.95rem">${_formatValue(t.NET_Profits, 'currency')}</td>
                     <td>${statusBadge}</td>
                   </tr>`;
               }).join('') : `
                 <tr>
-                  <td colspan="6" style="text-align:center;color:var(--text-3);padding:2rem">No transaction data available yet. Import Sales or Purchases to see matrix.</td>
+                  <td colspan="11" style="text-align:center;color:var(--text-3);padding:2rem">No financial transaction data recorded for ${horizonTitle} view.</td>
                 </tr>`}
             </tbody>
           </table>
@@ -1071,7 +1264,7 @@ const Dashboard = (() => {
     return `rgba(${r},${g},${b},${alpha})`;
   }
 
-  return { init, render, renderKPIs, renderCharts, expandChart, filterModule, refresh };
+  return { init, render, renderKPIs, renderCharts, expandChart, filterModule, refresh, setHorizon };
 })();
 
 window.Dashboard = Dashboard;
