@@ -1,0 +1,16 @@
+{
+  "name": "framgnt-kroger-sync-server",
+  "version": "1.0.0",
+  "description": "Local Playwright-based server for automated Kroger purchase data sync",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "install-browsers": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "playwright": "^1.44.0",
+    "xlsx": "^0.18.5"
+  }
+}

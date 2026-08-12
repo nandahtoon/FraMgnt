@@ -1,0 +1,82 @@
+{
+  "id": "kroger-api",
+  "name": "Kroger Official Developer Portal API Adaptor",
+  "version": "2.0.0",
+  "description": "Official OAuth2 Integration Suite for Kroger Developer APIs (Products, Locations, Identity Profile, & Cart)",
+  "targetModule": "purchase",
+  "icon": "🔑",
+  "apiProducts": [
+    {
+      "id": "products",
+      "name": "Products API",
+      "scope": "product.compact",
+      "endpoint": "/v1/products",
+      "description": "Search product catalog, pricing, UPCs, and fulfillment options"
+    },
+    {
+      "id": "locations",
+      "name": "Locations API",
+      "scope": "product.compact",
+      "endpoint": "/v1/locations",
+      "description": "Find Kroger store locations, store IDs, chains, and departments"
+    },
+    {
+      "id": "identity",
+      "name": "Identity Profile API",
+      "scope": "profile.compact",
+      "endpoint": "/v1/identity/profile",
+      "description": "Retrieve customer profile and loyalty card number"
+    },
+    {
+      "id": "cart",
+      "name": "Cart API",
+      "scope": "cart.basic:write",
+      "endpoint": "/v1/cart",
+      "description": "View and manage items in the user's active Kroger shopping cart"
+    }
+  ],
+  "credentials": [
+    {
+      "key": "client_id",
+      "label": "Kroger API Client ID",
+      "type": "text",
+      "required": true,
+      "placeholder": "my-app-client-id-xyz"
+    },
+    {
+      "key": "client_secret",
+      "label": "Kroger API Client Secret",
+      "type": "password",
+      "required": true,
+      "placeholder": "••••••••••••••••"
+    },
+    {
+      "key": "user_id",
+      "label": "Loyalty Card / Account ID",
+      "type": "text",
+      "required": false,
+      "placeholder": "400000000000"
+    }
+  ],
+  "settings": [
+    {
+      "key": "environment",
+      "label": "API Environment",
+      "type": "select",
+      "options": ["production", "certification"],
+      "default": "production"
+    },
+    {
+      "key": "base_url",
+      "label": "API Base URL",
+      "type": "text",
+      "default": "https://api.kroger.com/v1"
+    },
+    {
+      "key": "location_id",
+      "label": "Default Store Location ID",
+      "type": "text",
+      "default": "01400943"
+    }
+  ]
+}

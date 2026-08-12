@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FraMgnt Analytics — Modular Business Intelligence Platform</title>
+  <meta name="description" content="FraMgnt — A configurable, modular analytics platform for business intelligence and purchase data analysis.">
+  <meta name="theme-color" content="#6C63FF">
+
+  <!-- Preconnect for fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Global Styles -->
+  <link rel="stylesheet" href="./style.css">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ── App Loader ── -->
+  <div id="app-loader">
+    <div class="loader-logo">📊</div>
+    <div style="font-size:1.1rem;font-weight:700;letter-spacing:-0.02em">FraMgnt Analytics</div>
+    <div style="font-size:0.78rem;color:var(--text-2);margin-top:-0.5rem">Loading platform...</div>
+    <div class="loader-bar"><div class="loader-fill"></div></div>
+  </div>
+
+  <!-- ── App Shell ── -->
+  <div id="app-shell">
+
+    <!-- Top Navigation Bar -->
+    <header id="topbar">
+      <!-- Populated by app.js -->
+    </header>
+
+    <!-- Left Sidebar -->
+    <nav id="sidebar">
+      <!-- Populated by app.js -->
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="main-content">
+      <!-- Populated by router in app.js -->
+    </main>
+
+  </div>
+
+  <!-- ── Toast Container ── -->
+  <div id="toast-container"></div>
+
+  <!-- ── External Libraries ── -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- ── Scripts — order matters ── -->
+  <script src="./data/store.js"></script>
+  <script src="./connectors/kroger/kroger-client.js"></script>
+  <script src="./connectors/kroger-api/kroger-api-client.js"></script>
+  <script src="./connectors/sales-excel/sales-excel-client.js"></script>
+  <script src="./modules/purchase/purchase.js"></script>
+  <script src="./modules/module-engine.js"></script>
+  <script src="./dashboard/dashboard.js"></script>
+  <script src="./admin/admin.js"></script>
+  <script src="./app.js"></script>
+
+</body>
+</html>

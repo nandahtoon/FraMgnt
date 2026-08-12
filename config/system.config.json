@@ -1,0 +1,836 @@
+{
+  "app": {
+    "name": "FraMgnt Analytics",
+    "shortName": "FraMgnt",
+    "version": "1.0.0",
+    "logoIcon": "📊",
+    "tagline": "Modular Business Intelligence Platform",
+    "syncServer": {
+      "url": "http://localhost:8081",
+      "enabled": true
+    },
+    "connectors": [
+      "kroger",
+      "kroger-api",
+      "sales-excel"
+    ],
+    "theme": {
+      "preset": "cyber-dark",
+      "primaryColor": "#6C63FF",
+      "accentColor": "#00D4AA",
+      "dangerColor": "#FF6B6B",
+      "warningColor": "#FFD93D",
+      "bgDark": "#0B0C15",
+      "bgCard": "rgba(26, 27, 46, 0.7)",
+      "bgSidebar": "rgba(18, 19, 42, 0.85)",
+      "textPrimary": "#F0F0F8",
+      "textSecondary": "#9D9FC2",
+      "borderColor": "rgba(255, 255, 255, 0.08)"
+    }
+  },
+  "roles": [
+    {
+      "id": "admin",
+      "label": "System Administrator",
+      "permissions": [
+        "view_all",
+        "edit_all",
+        "delete_all",
+        "manage_config",
+        "manage_users"
+      ]
+    },
+    {
+      "id": "editor",
+      "label": "Data Editor",
+      "permissions": [
+        "view_all",
+        "edit_own",
+        "delete_own"
+      ]
+    },
+    {
+      "id": "viewer",
+      "label": "Viewer",
+      "permissions": [
+        "view_all"
+      ]
+    }
+  ],
+  "navigation": [
+    {
+      "id": "dashboard",
+      "label": "Dashboard",
+      "icon": "🏠",
+      "route": "dashboard"
+    },
+    {
+      "id": "purchase",
+      "label": "Purchases",
+      "icon": "🛒",
+      "route": "module/purchase"
+    },
+    {
+      "id": "sales",
+      "label": "Sale Data",
+      "icon": "📈",
+      "route": "module/sales"
+    },
+    {
+      "id": "statement",
+      "label": "Statements",
+      "icon": "📄",
+      "route": "module/statement"
+    },
+    {
+      "id": "admin",
+      "label": "Admin Panel",
+      "icon": "⚙️",
+      "route": "admin",
+      "requiredRole": "admin"
+    }
+  ],
+  "modules": [
+    {
+      "id": "purchase",
+      "name": "Purchase Data",
+      "icon": "🛒",
+      "description": "Track and analyze purchase history from grocery and retail stores",
+      "enabled": true,
+      "color": "#6C63FF",
+      "dataSource": {
+        "type": "manual",
+        "importEnabled": true,
+        "exportEnabled": true,
+        "importFormats": [
+          "csv",
+          "paste"
+        ],
+        "sources": [
+          {
+            "id": "kroger",
+            "name": "Kroger",
+            "logo": "🏪",
+            "url": "https://www.kroger.com/mypurchases",
+            "instructionSteps": [
+              "Log in to Kroger at kroger.com/mypurchases",
+              "View your purchase history on the page",
+              "Select and copy all purchase data from the page",
+              "Return here and paste into the Import Wizard",
+              "Map columns to fields and click Import"
+            ],
+            "csvTemplate": {
+              "columns": [
+                "Date",
+                "Store",
+                "Item",
+                "Quantity",
+                "Unit Price",
+                "Total",
+                "Savings",
+                "Category"
+              ]
+            }
+          }
+        ]
+      },
+      "fields": [
+        {
+          "id": "receipt_id",
+          "label": "Receipt #",
+          "type": "text",
+          "required": false,
+          "placeholder": "e.g. 0001-1234-5678",
+          "icon": "🧾",
+          "group": "transaction"
+        },
+        {
+          "id": "date",
+          "label": "Purchase Date",
+          "type": "date",
+          "required": true,
+          "icon": "📅",
+          "group": "transaction"
+        },
+        {
+          "id": "store_name",
+          "label": "Store Name",
+          "type": "text",
+          "required": true,
+          "placeholder": "e.g. Kroger #123",
+          "icon": "🏪",
+          "group": "transaction"
+        },
+        {
+          "id": "store_id",
+          "label": "Store Location",
+          "type": "text",
+          "required": false,
+          "placeholder": "e.g. 123 Main St",
+          "icon": "📍",
+          "group": "transaction"
+        },
+        {
+          "id": "item_name",
+          "label": "Item Name",
+          "type": "text",
+          "required": true,
+          "placeholder": "e.g. Organic Whole Milk",
+          "icon": "🏷️",
+          "group": "item"
+        },
+        {
+          "id": "upc",
+          "label": "UPC / SKU",
+          "type": "text",
+          "required": false,
+          "placeholder": "e.g. 011110891365",
+          "icon": "📊",
+          "group": "item"
+        },
+        {
+          "id": "category",
+          "label": "Category",
+          "type": "select",
+          "required": false,
+          "options": [
+            "Dairy & Eggs",
+            "Meat & Seafood",
+            "Produce",
+            "Bakery",
+            "Frozen Foods",
+            "Beverages",
+            "Snacks",
+            "Household",
+            "Personal Care",
+            "Baby",
+            "Pet Supplies",
+            "Pharmacy",
+            "Deli",
+            "Canned & Packaged",
+            "Condiments & Spices",
+            "Breakfast",
+            "Other"
+          ],
+          "icon": "🏷️",
+          "group": "item"
+        },
+        {
+          "id": "quantity",
+          "label": "Quantity",
+          "type": "number",
+          "required": true,
+          "min": 0.01,
+          "step": 0.01,
+          "placeholder": "1",
+          "icon": "🔢",
+          "group": "pricing"
+        },
+        {
+          "id": "unit_price",
+          "label": "Unit Price ($)",
+          "type": "currency",
+          "required": true,
+          "min": 0,
+          "placeholder": "0.00",
+          "icon": "💵",
+          "group": "pricing"
+        },
+        {
+          "id": "discount",
+          "label": "Discount / Savings ($)",
+          "type": "currency",
+          "required": false,
+          "min": 0,
+          "placeholder": "0.00",
+          "icon": "🎟️",
+          "group": "pricing"
+        },
+        {
+          "id": "total_price",
+          "label": "Total Price ($)",
+          "type": "currency",
+          "required": true,
+          "min": 0,
+          "placeholder": "0.00",
+          "icon": "💰",
+          "group": "pricing"
+        },
+        {
+          "id": "payment_method",
+          "label": "Payment Method",
+          "type": "select",
+          "required": false,
+          "options": [
+            "Credit Card",
+            "Debit Card",
+            "Cash",
+            "Gift Card",
+            "Kroger Pay",
+            "Apple Pay",
+            "Google Pay",
+            "EBT",
+            "Other"
+          ],
+          "icon": "💳",
+          "group": "transaction"
+        },
+        {
+          "id": "notes",
+          "label": "Notes",
+          "type": "textarea",
+          "required": false,
+          "placeholder": "Any additional notes...",
+          "icon": "📝",
+          "group": "other"
+        }
+      ],
+      "fieldGroups": [
+        {
+          "id": "transaction",
+          "label": "Transaction Info",
+          "icon": "🧾"
+        },
+        {
+          "id": "item",
+          "label": "Item Details",
+          "icon": "🏷️"
+        },
+        {
+          "id": "pricing",
+          "label": "Pricing",
+          "icon": "💰"
+        },
+        {
+          "id": "other",
+          "label": "Other",
+          "icon": "📝"
+        }
+      ],
+      "importMappings": {
+        "kroger_csv": {
+          "Date": "date",
+          "Store": "store_name",
+          "Item": "item_name",
+          "Quantity": "quantity",
+          "Unit Price": "unit_price",
+          "Total": "total_price",
+          "Savings": "discount",
+          "Category": "category"
+        }
+      },
+      "table": {
+        "defaultColumns": [
+          "date",
+          "store_name",
+          "item_name",
+          "category",
+          "quantity",
+          "unit_price",
+          "discount",
+          "total_price"
+        ],
+        "sortBy": "date",
+        "sortDir": "desc",
+        "pageSize": 20
+      },
+      "analytics": {
+        "kpis": [
+          {
+            "id": "total_spend",
+            "label": "Total Spend",
+            "field": "total_price",
+            "agg": "sum",
+            "format": "currency",
+            "icon": "💰",
+            "color": "#6C63FF"
+          },
+          {
+            "id": "total_trips",
+            "label": "Shopping Trips",
+            "field": "receipt_id",
+            "agg": "unique_receipts",
+            "format": "number",
+            "icon": "🛒",
+            "color": "#00D4AA"
+          },
+          {
+            "id": "total_items",
+            "label": "Items Purchased",
+            "field": "item_name",
+            "agg": "count",
+            "format": "number",
+            "icon": "📦",
+            "color": "#FFD93D"
+          },
+          {
+            "id": "avg_per_trip",
+            "label": "Avg. per Trip",
+            "field": "total_price",
+            "agg": "avg_per_receipt",
+            "format": "currency",
+            "icon": "📊",
+            "color": "#FF6B6B"
+          },
+          {
+            "id": "total_savings",
+            "label": "Total Savings",
+            "field": "discount",
+            "agg": "sum",
+            "format": "currency",
+            "icon": "🎟️",
+            "color": "#FF9F43"
+          }
+        ],
+        "charts": [
+          {
+            "id": "spend_over_time",
+            "title": "Spend Over Time",
+            "type": "line",
+            "groupBy": "date",
+            "dateGranularity": "month",
+            "valueField": "total_price",
+            "agg": "sum",
+            "color": "#6C63FF"
+          },
+          {
+            "id": "spend_by_category",
+            "title": "Spend by Category",
+            "type": "doughnut",
+            "groupBy": "category",
+            "valueField": "total_price",
+            "agg": "sum"
+          },
+          {
+            "id": "top_items",
+            "title": "Top Purchased Items",
+            "type": "bar",
+            "groupBy": "item_name",
+            "valueField": "total_price",
+            "agg": "sum",
+            "limit": 10,
+            "color": "#00D4AA"
+          },
+          {
+            "id": "monthly_comparison",
+            "title": "Monthly Spend Comparison",
+            "type": "bar",
+            "groupBy": "date",
+            "dateGranularity": "month",
+            "valueField": "total_price",
+            "agg": "sum",
+            "color": "#FF9F43"
+          }
+        ]
+      }
+    },
+    {
+      "id": "sales",
+      "name": "Sale Data",
+      "icon": "📈",
+      "description": "Track and analyze sales reports, product quantities, and gross revenues",
+      "enabled": true,
+      "color": "#00D4AA",
+      "dataSource": {
+        "type": "manual",
+        "importEnabled": true,
+        "exportEnabled": true,
+        "importFormats": [
+          "excel",
+          "csv",
+          "paste"
+        ],
+        "csvTemplate": {
+          "columns": [
+            "Division code",
+            "Division name",
+            "Store #",
+            "Date",
+            "GTIN",
+            "Product name",
+            "QS",
+            "RCP",
+            "QS*RCP"
+          ]
+        }
+      },
+      "fields": [
+        {
+          "id": "division_code",
+          "label": "Division Code",
+          "type": "text",
+          "required": false,
+          "icon": "🏢",
+          "group": "store"
+        },
+        {
+          "id": "division_name",
+          "label": "Division Name",
+          "type": "text",
+          "required": false,
+          "icon": "🏷️",
+          "group": "store"
+        },
+        {
+          "id": "store_number",
+          "label": "Store #",
+          "type": "text",
+          "required": true,
+          "icon": "🏪",
+          "group": "store"
+        },
+        {
+          "id": "date",
+          "label": "Date",
+          "type": "date",
+          "required": true,
+          "icon": "📅",
+          "group": "store"
+        },
+        {
+          "id": "gtin",
+          "label": "GTIN / UPC",
+          "type": "text",
+          "required": false,
+          "icon": "📊",
+          "group": "product"
+        },
+        {
+          "id": "product_name",
+          "label": "Product Name",
+          "type": "text",
+          "required": true,
+          "icon": "📦",
+          "group": "product"
+        },
+        {
+          "id": "quantity_sold",
+          "label": "Quantity Sold (QS)",
+          "type": "number",
+          "required": true,
+          "min": 0,
+          "icon": "🔢",
+          "group": "sales"
+        },
+        {
+          "id": "retail_price",
+          "label": "Retail Price (RCP)",
+          "type": "currency",
+          "required": true,
+          "min": 0,
+          "icon": "💵",
+          "group": "sales"
+        },
+        {
+          "id": "total_sales",
+          "label": "Total Sales ($)",
+          "type": "currency",
+          "required": true,
+          "min": 0,
+          "icon": "💰",
+          "group": "sales"
+        }
+      ],
+      "fieldGroups": [
+        {
+          "id": "store",
+          "label": "Store & Date",
+          "icon": "🏪"
+        },
+        {
+          "id": "product",
+          "label": "Product Info",
+          "icon": "📦"
+        },
+        {
+          "id": "sales",
+          "label": "Sales Revenue",
+          "icon": "💰"
+        }
+      ],
+      "table": {
+        "defaultColumns": [
+          "division_name",
+          "store_number",
+          "date",
+          "product_name",
+          "gtin",
+          "quantity_sold",
+          "retail_price",
+          "total_sales"
+        ],
+        "sortBy": "date",
+        "sortDir": "desc",
+        "pageSize": 20
+      },
+      "analytics": {
+        "kpis": [
+          {
+            "id": "total_sales_amount",
+            "label": "Total Revenue",
+            "field": "total_sales",
+            "agg": "sum",
+            "format": "currency",
+            "icon": "💰",
+            "color": "#00D4AA"
+          },
+          {
+            "id": "total_units_sold",
+            "label": "Units Sold",
+            "field": "quantity_sold",
+            "agg": "sum",
+            "format": "number",
+            "icon": "📦",
+            "color": "#6C63FF"
+          },
+          {
+            "id": "avg_price",
+            "label": "Avg Retail Price",
+            "field": "retail_price",
+            "agg": "avg",
+            "format": "currency",
+            "icon": "🏷️",
+            "color": "#FFD93D"
+          },
+          {
+            "id": "unique_products",
+            "label": "Active SKUs",
+            "field": "product_name",
+            "agg": "count",
+            "format": "number",
+            "icon": "📊",
+            "color": "#FF9F43"
+          }
+        ],
+        "charts": [
+          {
+            "id": "sales_over_time",
+            "title": "Sales Revenue Over Time",
+            "type": "line",
+            "groupBy": "date",
+            "dateGranularity": "month",
+            "valueField": "total_sales",
+            "agg": "sum",
+            "color": "#00D4AA"
+          },
+          {
+            "id": "top_selling_products",
+            "title": "Top Selling Products by Revenue",
+            "type": "bar",
+            "groupBy": "product_name",
+            "valueField": "total_sales",
+            "agg": "sum",
+            "limit": 10,
+            "color": "#6C63FF"
+          }
+        ]
+      }
+    },
+    {
+      "id": "statement",
+      "name": "Statement Data",
+      "icon": "📄",
+      "description": "Manage franchise net pay statements, deductions, commissions, and net payout summary",
+      "enabled": true,
+      "color": "#FF9F43",
+      "dataSource": {
+        "type": "manual",
+        "importEnabled": true,
+        "exportEnabled": true,
+        "importFormats": [
+          "pdf",
+          "csv",
+          "paste"
+        ]
+      },
+      "fields": [
+        {
+          "id": "statement_no",
+          "label": "Statement No",
+          "type": "text",
+          "required": true,
+          "icon": "📄",
+          "group": "header"
+        },
+        {
+          "id": "date_issued",
+          "label": "Date Issued",
+          "type": "date",
+          "required": true,
+          "icon": "📅",
+          "group": "header"
+        },
+        {
+          "id": "payment_period",
+          "label": "Payment Period",
+          "type": "text",
+          "required": false,
+          "icon": "🗓️",
+          "group": "header"
+        },
+        {
+          "id": "franchisee",
+          "label": "Franchisee",
+          "type": "text",
+          "required": false,
+          "icon": "👤",
+          "group": "header"
+        },
+        {
+          "id": "store_no",
+          "label": "Store No",
+          "type": "text",
+          "required": false,
+          "icon": "🏪",
+          "group": "header"
+        },
+        {
+          "id": "gross_sales",
+          "label": "Gross Sales ($)",
+          "type": "currency",
+          "required": true,
+          "min": 0,
+          "icon": "💵",
+          "group": "financials"
+        },
+        {
+          "id": "net_sales",
+          "label": "Net Sales ($)",
+          "type": "currency",
+          "required": true,
+          "min": 0,
+          "icon": "📈",
+          "group": "financials"
+        },
+        {
+          "id": "insurance",
+          "label": "Insurance ($)",
+          "type": "currency",
+          "required": false,
+          "icon": "🛡️",
+          "group": "financials"
+        },
+        {
+          "id": "deductions",
+          "label": "Deductions ($)",
+          "type": "currency",
+          "required": false,
+          "icon": "➖",
+          "group": "financials"
+        },
+        {
+          "id": "net_pay",
+          "label": "Net Pay Total ($)",
+          "type": "currency",
+          "required": true,
+          "icon": "💰",
+          "group": "financials"
+        }
+      ],
+      "fieldGroups": [
+        {
+          "id": "header",
+          "label": "Statement Metadata",
+          "icon": "📄"
+        },
+        {
+          "id": "financials",
+          "label": "Financial Summary",
+          "icon": "💰"
+        }
+      ],
+      "table": {
+        "defaultColumns": [
+          "statement_no",
+          "date_issued",
+          "payment_period",
+          "franchisee",
+          "gross_sales",
+          "net_sales",
+          "deductions",
+          "net_pay"
+        ],
+        "sortBy": "date_issued",
+        "sortDir": "desc",
+        "pageSize": 20
+      },
+      "analytics": {
+        "kpis": [
+          {
+            "id": "total_net_pay",
+            "label": "Total Net Payout",
+            "field": "net_pay",
+            "agg": "sum",
+            "format": "currency",
+            "icon": "💰",
+            "color": "#FF9F43"
+          },
+          {
+            "id": "total_gross_sales",
+            "label": "Total Gross Sales",
+            "field": "gross_sales",
+            "agg": "sum",
+            "format": "currency",
+            "icon": "💵",
+            "color": "#00D4AA"
+          },
+          {
+            "id": "total_deductions",
+            "label": "Total Deductions",
+            "field": "deductions",
+            "agg": "sum",
+            "format": "currency",
+            "icon": "➖",
+            "color": "#FF6B6B"
+          }
+        ],
+        "charts": [
+          {
+            "id": "net_pay_history",
+            "title": "Net Payout Trend",
+            "type": "line",
+            "groupBy": "date_issued",
+            "valueField": "net_pay",
+            "agg": "sum",
+            "color": "#FF9F43"
+          }
+        ]
+      }
+    }
+  ],
+  "dashboard": {
+    "title": "Analytics Overview",
+    "defaultModule": "purchase",
+    "layout": [
+      {
+        "type": "kpis",
+        "moduleId": "purchase",
+        "cols": 5
+      },
+      {
+        "type": "chart",
+        "moduleId": "purchase",
+        "chartId": "spend_over_time",
+        "cols": 8
+      },
+      {
+        "type": "chart",
+        "moduleId": "purchase",
+        "chartId": "spend_by_category",
+        "cols": 4
+      },
+      {
+        "type": "chart",
+        "moduleId": "purchase",
+        "chartId": "top_items",
+        "cols": 6
+      },
+      {
+        "type": "chart",
+        "moduleId": "purchase",
+        "chartId": "monthly_comparison",
+        "cols": 6
+      }
+    ]
+  }
+}

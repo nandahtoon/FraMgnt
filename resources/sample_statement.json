@@ -1,0 +1,24 @@
+[
+  {
+    "statement_no": "764DCC6875",
+    "version": "1",
+    "date_issued": "2026-07-17",
+    "accounting_year": "2026",
+    "accounting_week": "22",
+    "payment_period": "05/31/2026 - 06/06/2026",
+    "business": "Snowfruit",
+    "company": "BHONE THEINKHA LLC",
+    "retailer": "Kroger",
+    "franchisee": "Nanda Htoon",
+    "division": "16",
+    "pay_code": "KROHF0982-00FF",
+    "store_no": "982",
+    "email": "krg016F982@snowfruitfranchisee.com",
+    "store_type": "Full Service",
+    "gross_sales": 9386.95,
+    "net_sales": 5632.17,
+    "insurance": -170.84,
+    "deductions": -7.38,
+    "net_pay": 5453.95
+  }
+]

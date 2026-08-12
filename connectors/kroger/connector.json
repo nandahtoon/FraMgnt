@@ -1,0 +1,44 @@
+{
+  "id": "kroger",
+  "name": "Kroger Auto-Sync",
+  "version": "1.2.0",
+  "description": "Automatically imports purchase history and receipts directly from Kroger.com",
+  "targetModule": "purchase",
+  "icon": "🛒",
+  "credentials": [
+    {
+      "key": "email",
+      "label": "Kroger Account Email",
+      "type": "email",
+      "required": true,
+      "placeholder": "user@example.com"
+    },
+    {
+      "key": "password",
+      "label": "Kroger Account Password",
+      "type": "password",
+      "required": true,
+      "placeholder": "••••••••"
+    }
+  ],
+  "settings": [
+    {
+      "key": "url_pattern",
+      "label": "Purchase URL Pattern",
+      "type": "text",
+      "default": "https://www.kroger.com/mypurchases?page={page}&tab=purchases"
+    },
+    {
+      "key": "max_pages",
+      "label": "Max Pages to Scrape",
+      "type": "number",
+      "default": 5
+    },
+    {
+      "key": "tab",
+      "label": "Tab Name",
+      "type": "text",
+      "default": "purchases"
+    }
+  ]
+}

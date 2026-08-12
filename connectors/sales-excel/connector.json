@@ -1,0 +1,38 @@
+{
+  "id": "sales-excel",
+  "name": "Excel Sales Report Connector",
+  "version": "1.0.0",
+  "description": "Automated folder watch & API importer for daily franchisee sales reports (XLSX / CSV)",
+  "targetModule": "sales",
+  "icon": "📈",
+  "credentials": [
+    {
+      "key": "watch_folder",
+      "label": "Auto-Watch Local Directory Path",
+      "type": "text",
+      "required": true,
+      "placeholder": "C:\\PROJECTS\\FraMgnt\\resources"
+    },
+    {
+      "key": "file_mask",
+      "label": "File Name Mask / Pattern",
+      "type": "text",
+      "required": false,
+      "placeholder": "*.xlsx"
+    }
+  ],
+  "settings": [
+    {
+      "key": "auto_ingest",
+      "label": "Auto-Ingest New Files",
+      "type": "checkbox",
+      "default": true
+    },
+    {
+      "key": "default_division",
+      "label": "Default Division Code",
+      "type": "text",
+      "default": "16"
+    }
+  ]
+}
